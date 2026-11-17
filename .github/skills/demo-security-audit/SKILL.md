@@ -1,11 +1,11 @@
 ---
-name: security-review
+name: demo-security-audit
 description: "Perform a repeatable, evidence-based application security review with a threat model, structured procedure, progressive checklist, prioritized findings, and remediation plan. Use for security review, threat modeling, OWASP risk assessment, auth or database inspection, or security-sensitive change verification."
 argument-hint: "Feature, file, or diff to review"
 user-invocable: true
 ---
 
-# Security Review
+# Demo Security Audit
 
 Use this workflow for review and remediation planning. Read [review checklist](./references/review-checklist.md) only after identifying the technologies and trust boundaries in scope.
 

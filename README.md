@@ -11,8 +11,8 @@ This small TypeScript API demonstrates how a team can give GitHub Copilot a secu
 | [Repository instructions](.github/copilot-instructions.md) | Security defaults that apply throughout the project |
 | [API instructions](.github/instructions/api-security.instructions.md) | Controls automatically attached to production TypeScript work |
 | [Test instructions](.github/instructions/security-tests.instructions.md) | Negative-test expectations for the test suite |
-| [Secure Endpoint prompt](.github/prompts/secure-endpoint.prompt.md) | A repeatable, focused implementation task |
-| [Security Review skill](.github/skills/security-review/SKILL.md) | A discoverable multi-step review workflow with a checklist resource |
+| [Secure Endpoint prompt](.github/prompts/secure-endpoint.prompt.md) | A Local harness entry point that selects Secure Feature Lead |
+| [Demo Security Audit skill](.github/skills/demo-security-audit/SKILL.md) | A discoverable multi-step review workflow with a checklist resource, distinct from built-in `/security-review` |
 | [Security Reviewer agent](.github/agents/security-reviewer.agent.md) | An isolated, read-only reviewer with a strict output contract |
 | [Threat Modeler agent](.github/agents/threat-modeler.agent.md) | A hidden, read-only specialist invoked before implementation |
 | [Secure Feature Lead agent](.github/agents/secure-feature-lead.agent.md) | An orchestrator that delegates, implements, validates, and reports provenance |
@@ -89,12 +89,16 @@ If your organization also enables Copilot code review on pull requests, the codi
 
 Open the repository folder in VS Code, reload the window so customizations are discovered, and open Copilot Chat in agent mode.
 
+The `/secure-endpoint` entry point is the [Secure Endpoint prompt](.github/prompts/secure-endpoint.prompt.md). Prompt files are supported only in Local harness sessions; there, the prompt's `agent:` field selects **Secure Feature Lead**. In Copilot harness sessions, select **Secure Feature Lead** and submit the endpoint request directly; this repository does not provide a separate endpoint skill.
+
+Reloading does not make prompt files available in Copilot harness sessions. See the [VS Code prompt file documentation](https://code.visualstudio.com/docs/copilot/customization/prompt-files).
+
 1. Ask for a new database helper and Express handler in a file under `src/`, then ask for the same thing in a file outside `src/`. Compare the generated SQL, input validation, and error handling. This is secure-by-default behavior with no review step involved.
 2. Ask `What are the trust boundaries and exploitable security issues in #src/database.ts? Do not edit yet.`
 3. Select the login handler in `src/app.ts` and run `/review`. Then make a small change through inline chat. Note that both reflect repository standards without any custom agent.
 4. Select the **Security Reviewer** custom agent and ask it to review `src/`. Notice that it can inspect but cannot edit or run commands.
-5. In a new agent chat, run `/security-review src/` to load the reusable review method directly.
-6. Run `/secure-endpoint Add POST /password-reset/request without revealing whether an account exists`.
+5. In a new agent chat, run `/demo-security-audit src/` to load the repository's reusable review method, not the built-in `/security-review` command.
+6. In Local harness sessions, run `/secure-endpoint Add POST /password-reset/request without revealing whether an account exists`. In Copilot harness sessions, select **Secure Feature Lead** and submit that task directly; prompt files do not run in that harness.
 7. Watch **Secure Feature Lead** delegate pre-edit analysis to **Threat Modeler**, implement and validate, then delegate post-change review to **Security Reviewer**.
 8. Review the raw subagent findings and command outcomes before accepting the result.
 

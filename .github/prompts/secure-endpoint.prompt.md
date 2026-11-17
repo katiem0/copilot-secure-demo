@@ -1,5 +1,5 @@
 ---
-name: "Secure Endpoint"
+name: "secure-endpoint"
 description: "Implement one sensitive Express endpoint through delegated threat modeling, focused implementation, deterministic validation, and read-only security review."
 argument-hint: "Describe the endpoint, intended caller, protected asset, and likely abuse case"
 agent: "Secure Feature Lead"
