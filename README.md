@@ -1,8 +1,10 @@
 # Secure-by-Default Coding with GitHub Copilot
 
-This small TypeScript API demonstrates how a team can give GitHub Copilot a security-aware operating context from the first prompt. It goes beyond basic code completion by composing repository instructions, path-specific rules, a reusable prompt, an agent skill, and specialist subagents into one reviewable workflow.
+This small TypeScript API demonstrates how a team can give GitHub Copilot a security-aware operating context from the first prompt. It goes beyond basic code completion by composing repository instructions, path-specific rules, reusable skills, and specialist subagents into one reviewable workflow.
 
 > **Training repository:** The starting code intentionally contains security weaknesses. Do not deploy it or reuse it as an application template.
+
+> **VS Code prompt-file caveat (November 2026):** The legacy `.prompt.md` file runs only in the **Local** harness. Local is deprecated and will be removed by **February 2027**. The Copilot harness uses the new endpoint skill instead; select **Secure Feature Lead** separately. Ordinary chat prompts are not deprecated. See the [prompt-file documentation](https://code.visualstudio.com/docs/agent-customization/prompt-files) and [migration guide](https://code.visualstudio.com/docs/agent-customization/migrate-customizations#_convert-prompt-files-to-skills).
 
 ## What This Demonstrates
 
@@ -11,7 +13,8 @@ This small TypeScript API demonstrates how a team can give GitHub Copilot a secu
 | [Repository instructions](.github/copilot-instructions.md) | Security defaults that apply throughout the project |
 | [API instructions](.github/instructions/api-security.instructions.md) | Controls automatically attached to production TypeScript work |
 | [Test instructions](.github/instructions/security-tests.instructions.md) | Negative-test expectations for the test suite |
-| [Secure Endpoint prompt](.github/prompts/secure-endpoint.prompt.md) | A Local harness entry point that selects Secure Feature Lead |
+| [Secure Endpoint skill](.github/skills/secure-endpoint/SKILL.md) | An explicitly invoked endpoint workflow; select Secure Feature Lead first |
+| [Legacy Secure Endpoint prompt](.github/prompts/secure-endpoint.prompt.md) | Local-only entry point retained until the skill is verified in VS Code |
 | [Demo Security Audit skill](.github/skills/demo-security-audit/SKILL.md) | A discoverable multi-step review workflow with a checklist resource, distinct from built-in `/security-review` |
 | [Security Reviewer agent](.github/agents/security-reviewer.agent.md) | An isolated, read-only reviewer with a strict output contract |
 | [Threat Modeler agent](.github/agents/threat-modeler.agent.md) | A hidden, read-only specialist invoked before implementation |
@@ -39,6 +42,7 @@ The contrast is intentional:
 - `npm run security:check` fails with five teaching findings because functional correctness is not a security review.
 
 The security check is a deterministic prop for this workshop, not a general-purpose scanner.
+Its SEC005 check looks for `rateLimit(` anywhere in `src/app.ts`; adding a limiter to another route can hide an unthrottled login route. Inspect the login route separately.
 
 ## A Different Copilot Mental Model
 
@@ -59,7 +63,7 @@ flowchart LR
 
 - **Instructions supply defaults.** They reduce repeated prompting.
 - **Skills supply methods.** They load specialized procedures only when relevant.
-- **Prompts package an entry point.** They route a focused task into the right workflow.
+- **Prompt files package an entry point in Local sessions.** They are a legacy option in VS Code; prefer skills for new reusable workflows.
 - **Subagents isolate roles and context.** A specialist returns a bounded result instead of filling the main chat with every intermediate detail.
 - **Tools define capabilities.** The reviewer cannot edit or execute commands; the lead can.
 - **Humans and repository controls decide.** Delegated review is useful evidence, not independent approval.
@@ -83,26 +87,31 @@ Three consequences are worth stating plainly:
 - These are plain text files in the working tree. `.github/` is a folder name VS Code looks for, not a hosting requirement, so they work with any version control system. Teammates get them by syncing the repository, and a rule change is a reviewable diff with an author and an approver.
 - Inline completions do not consume instructions. That is exactly why type checking, tests, linting, and human review stay in the loop regardless of how good the instructions become.
 
-If your organization also enables Copilot code review on pull requests, the coding agent, or the CLI, those surfaces read the same files. Nothing written here has to be redone.
+If your organization also enables Copilot code review on pull requests, the coding agent, or the CLI, those surfaces also read supported instructions files. That does not make the Local-only prompt file portable.
 
 ## Try the Customizations
 
-Open the repository folder in VS Code, reload the window so customizations are discovered, and open Copilot Chat in agent mode.
+Open the repository folder in VS Code, reload the window so customizations are discovered, and open Copilot Chat in a Copilot-harness agent session.
 
-The `/secure-endpoint` entry point is the [Secure Endpoint prompt](.github/prompts/secure-endpoint.prompt.md). Prompt files are supported only in Local harness sessions; there, the prompt's `agent:` field selects **Secure Feature Lead**. In Copilot harness sessions, select **Secure Feature Lead** and submit the endpoint request directly; this repository does not provide a separate endpoint skill.
+For the endpoint workflow, select **Secure Feature Lead** first, then invoke the [Secure Endpoint skill](.github/skills/secure-endpoint/SKILL.md) as `/secure-endpoint`. A skill does not select an agent. The legacy prompt remains until the skill has been verified end to end in VS Code; it is available only in the deprecated Local harness.
 
-Reloading does not make prompt files available in Copilot harness sessions. See the [VS Code prompt file documentation](https://code.visualstudio.com/docs/copilot/customization/prompt-files).
+The lead's `agents:` allowlist applies to Local, not the Copilot harness. In Copilot, the lead's instructions request the named specialists; verify the actual delegations rather than treating that list as an enforced restriction.
 
 1. Ask for a new database helper and Express handler in a file under `src/`, then ask for the same thing in a file outside `src/`. Compare the generated SQL, input validation, and error handling. This is secure-by-default behavior with no review step involved.
 2. Ask `What are the trust boundaries and exploitable security issues in #src/database.ts? Do not edit yet.`
 3. Select the login handler in `src/app.ts` and run `/review`. Then make a small change through inline chat. Note that both reflect repository standards without any custom agent.
 4. Select the **Security Reviewer** custom agent and ask it to review `src/`. Notice that it can inspect but cannot edit or run commands.
 5. In a new agent chat, run `/demo-security-audit src/` to load the repository's reusable review method, not the built-in `/security-review` command.
-6. In Local harness sessions, run `/secure-endpoint Add POST /password-reset/request without revealing whether an account exists`. In Copilot harness sessions, select **Secure Feature Lead** and submit that task directly; prompt files do not run in that harness.
+6. Select **Secure Feature Lead**, then run `/secure-endpoint Add POST /password-reset/request without revealing whether an account exists`. If the skill is unavailable, submit the request directly to the selected lead instead.
 7. Watch **Secure Feature Lead** delegate pre-edit analysis to **Threat Modeler**, implement and validate, then delegate post-change review to **Security Reviewer**.
 8. Review the raw subagent findings and command outcomes before accepting the result.
 
 Copilot responses vary by model and context. Evaluate whether each answer cites real code paths, proposes a negative regression test, and states residual risk.
+
+### Verification before retiring the legacy prompt
+The skill is in place and the two specialists have been delegated to in a no-edit rehearsal. Explicit slash invocation with the selected lead still needs verification in a fresh VS Code Copilot-harness session.
+1. Select **Secure Feature Lead**, invoke `/secure-endpoint`, and confirm the skill actually loads. Conversion does not preserve the prompt's `agent:` selection; the skill cannot select the lead.
+2. Verify both specialist delegations and the required checks on a representative change. Retire `.github/prompts/secure-endpoint.prompt.md` only after that end-to-end verification succeeds.
 
 ## Intentional Findings
 
